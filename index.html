@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Agendamento • Dra. Luisa Chácara</title>
+  <meta name="theme-color" content="#c39a6b" />
+  <meta name="description" content="Agende sua consulta de forma rápida e prática." />
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root {
+      --bg:#f6efe7;--panel:#fffdfa;--line:#e8d8c8;--primary:#c39a6b;--primary2:#b78656;
+      --text:#49392d;--muted:#7a6859;--ok:#2f7d5c;--danger:#b65252;--shadow:0 14px 34px rgba(126,93,58,.10);--radius:24px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#f9f4ee 0%, #f4ece3 100%);color:var(--text)}
+    body{padding-bottom:92px}
+    button,input,select,textarea{font:inherit}
+    .hidden{display:none!important}
+    .splash{position:fixed;inset:0;background:linear-gradient(180deg,#fbf7f1,#f5ece1);display:flex;align-items:center;justify-content:center;z-index:100;transition:.45s ease}
+    .splash.hide{opacity:0;visibility:hidden}
+    .splash-card{display:flex;flex-direction:column;align-items:center;gap:18px;padding:28px}
+    .splash-card img{width:min(180px,56vw);max-height:180px;object-fit:contain}
+    .loader{width:min(220px,72vw);height:10px;background:rgba(195,154,107,.16);border-radius:999px;overflow:hidden}
+    .loader span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ead3b8,var(--primary),#d9b489);animation:loading 1.2s ease forwards}
+    @keyframes loading{from{width:0}to{width:100%}}
+    .shell{max-width:520px;margin:0 auto;padding:16px 14px 24px}
+    .hero{background:linear-gradient(180deg,#fffdf9,#faf4ec);border:1px solid var(--line);border-radius:30px;padding:18px;box-shadow:var(--shadow);margin-top:14px}
+    .brand{display:flex;align-items:center;gap:14px}
+    .brand img{width:68px;height:68px;border-radius:20px;background:#fff;padding:8px;border:1px solid var(--line);box-shadow:var(--shadow);object-fit:contain}
+    .brand h1{margin:0;font-size:24px;line-height:1.1}
+    .brand p{margin:6px 0 0;color:var(--muted);font-size:14px}
+    .quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+    .mini-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px}
+    .mini-card strong{display:block;font-size:15px}
+    .mini-card span{display:block;color:var(--muted);font-size:13px;margin-top:6px}
+    .page{display:none}
+    .page.active{display:block}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-top:14px}
+    .card.soft{background:linear-gradient(180deg,#fffdf9,#faf4ec)}
+    .section-head h2,.section-head h3{margin:0}
+    .section-head p{margin:6px 0 0;color:var(--muted);font-size:14px}
+    label{display:block;color:var(--muted);font-size:13px;margin:10px 0 8px}
+    input,select,textarea{width:100%;padding:15px;border-radius:18px;border:1px solid var(--line);background:#fff;color:var(--text);outline:none}
+    input:focus,select:focus,textarea:focus{border-color:#d3ad83;box-shadow:0 0 0 4px rgba(195,154,107,.12)}
+    textarea{min-height:100px;resize:vertical}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .btn{appearance:none;border:none;border-radius:18px;padding:15px 16px;cursor:pointer;transition:.18s ease;background:#fff;color:var(--text);border:1px solid var(--line);box-shadow:var(--shadow);font-weight:800;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+    .btn:active{transform:scale(.99)}
+    .btn.primary{background:linear-gradient(180deg,#d7b38b,#c69768);color:#fff;border-color:#c69768}
+    .btn.soft{background:#fff9f2}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+    .notice{padding:13px 14px;border-radius:16px;background:#fff8ef;border:1px solid var(--line);color:var(--muted);font-size:14px}
+    .statusline{display:none;margin-top:14px;padding:12px 14px;border-radius:14px;font-weight:700}
+    .statusline.show{display:block}
+    .statusline.ok{background:#edf8f2;color:var(--ok);border:1px solid #d0e9db}
+    .statusline.error{background:#fdeeee;color:var(--danger);border:1px solid #f0d1d1}
+    .slots{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .slot{padding:10px 12px;border-radius:999px;background:#fff2df;border:1px solid #ecd2aa;color:#845d2e;font-size:13px}
+    .slot.free{background:#edf8f2;border-color:#d3eadb;color:#2f7d5c}
+    .summary{display:grid;gap:12px}
+    .summary-card{padding:16px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,#fff,#fbf6ef)}
+    .summary-card h4{margin:0 0 6px;font-size:18px}
+    .summary-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+    .bottom-nav{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(249,244,238,.92);backdrop-filter:blur(14px);border-top:1px solid rgba(232,216,200,.9);z-index:50}
+    .bottom-nav .wrap{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .nav-btn{padding:12px 10px;border-radius:20px;border:1px solid transparent;background:transparent;color:var(--muted);font-weight:800;box-shadow:none}
+    .nav-btn.active{background:#fff;border-color:#ead8c2;color:var(--primary2);box-shadow:var(--shadow)}
+    .success-overlay{position:fixed;inset:0;background:rgba(68,45,20,.28);display:none;align-items:center;justify-content:center;padding:16px;z-index:120}
+    .success-overlay.show{display:flex}
+    .success-card{width:min(420px,100%);background:#fffdf9;border:1px solid var(--line);border-radius:28px;padding:24px;box-shadow:0 28px 60px rgba(68,45,20,.18);text-align:center}
+    .success-icon{width:74px;height:74px;border-radius:999px;background:#edf8f2;border:1px solid #d3eadb;color:#2f7d5c;display:flex;align-items:center;justify-content:center;font-size:34px;margin:0 auto 14px}
+    .helper{font-size:13px;color:var(--muted);margin-top:6px}
+    @media (max-width:420px){ .form-grid,.quick-grid,.actions{grid-template-columns:1fr} .brand h1{font-size:22px} }
+  </style>
+</head>
+<body>
+  <div class="splash" id="splash">
+    <div class="splash-card">
+      <img src="logo.png" alt="Logo Dra. Luisa Chácara">
+      <div class="loader"><span></span></div>
+      <small style="letter-spacing:.18em;text-transform:uppercase;color:#7a6859;">Agendamento Online</small>
+    </div>
+  </div>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="brand">
+        <img src="logo.png" alt="Logo Dra. Luisa Chácara">
+        <div>
+          <h1>Dra. Luisa Chácara</h1>
+          <p>Agende sua consulta com praticidade pelo celular.</p>
+        </div>
+      </div>
+      <div class="quick-grid">
+        <div class="mini-card">
+          <strong>Horários atuais</strong>
+          <span>Sex: 08h às 12h e 14h às 17h • Sáb: 08h às 12h.</span>
+        </div>
+        <div class="mini-card">
+          <strong>Retornos</strong>
+          <span>Segunda a quinta: combinar direto com a clínica.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="page active" id="page-inicio">
+      <div class="card soft">
+        <div class="section-head">
+          <h2>Bem-vindo(a)</h2>
+          <p>Use o menu abaixo para agendar sua consulta ou falar com a clínica.</p>
+        </div>
+        <div class="summary" style="margin-top:14px;">
+          <div class="summary-card">
+            <h4>Regras de atendimento</h4>
+            <p>De segunda a quinta, retornos são tratados direto com a clínica. Sexta-feira tem agenda de 08:00 às 12:00 e de 14:00 às 17:00. Aos sábados, de 08:00 às 12:00. Domingo não atende.</p>
+          </div>
+          <div class="summary-card">
+            <h4>WhatsApp imediato</h4>
+            <p>Depois que o agendamento for enviado, o WhatsApp da clínica abre com nome, data e horário preenchidos.</p>
+          </div>
+          <div class="summary-card">
+            <h4>Valor da consulta</h4>
+            <p>Consulta no valor de <strong>R$ 300,00</strong>.</p>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:16px;">
+          <button class="btn primary" type="button" onclick="switchPage('agendar')">Agendar agora</button>
+          <a class="btn soft" href="https://wa.me/5573981168713" target="_blank" rel="noopener">Falar no WhatsApp</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-agendar">
+      <div class="card">
+        <div class="section-head">
+          <h2>Novo agendamento</h2>
+          <p>Preencha as informações abaixo para solicitar sua consulta.</p>
+        </div>
+
+        <div class="notice">
+          Segunda a quinta: para retorno, fale direto com a clínica. Sexta e sábado têm horários liberados no app. Domingo não funciona.<br><br>
+          <strong>Valor da consulta: R$ 300,00.</strong>
+        </div>
+
+        <form id="appointmentForm">
+          <label>Nome completo
+            <input id="paciente" name="paciente" required placeholder="Digite seu nome completo">
+          </label>
+
+          <div class="form-grid">
+            <label>Telefone
+              <input id="telefone" name="telefone" required placeholder="(73) 99999-9999" inputmode="tel">
+            </label>
+            <label>E-mail
+              <input id="email" name="email" type="email" placeholder="seuemail@exemplo.com">
+            </label>
+          </div>
+
+          <div class="form-grid">
+            <label>Idade
+              <input id="idade" name="idade" type="number" min="0" max="120" placeholder="Ex: 35">
+            </label>
+            <label>Sexo
+              <select id="sexo" name="sexo">
+                <option value="">Selecionar</option>
+                <option>Masculino</option>
+                <option>Feminino</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-grid">
+            <label>Data
+              <input id="data" name="data" type="date" required>
+            </label>
+            <label>Hora
+              <select id="hora" name="hora" required>
+                <option value="">Selecione a data primeiro</option>
+              </select>
+              <div class="helper">Intervalo de 1 hora entre os horários.</div>
+            </label>
+          </div>
+
+          <label>Tipo de consulta
+            <select id="tipo_consulta" name="tipo_consulta">
+              <option>Primeira Consulta</option>
+              <option>Retorno</option>
+              <option>Acompanhamento</option>
+              <option>Avaliação</option>
+              <option>Revisão de Exames</option>
+            </select>
+          </label>
+
+          <label>Observações
+            <textarea id="observacoes" name="observacoes" placeholder="Se quiser, deixe alguma observação para a clínica."></textarea>
+          </label>
+
+          <div class="notice">
+            <strong id="occupiedInfo">Selecione uma data para ver os horários disponíveis.</strong>
+            <div class="slots" id="occupiedSlots"></div>
+          </div>
+
+          <div class="actions">
+            <button class="btn primary" id="submitBtn" type="submit">Confirmar agendamento</button>
+            <button class="btn soft" id="clearBtn" type="button">Limpar</button>
+          </div>
+
+          <div class="statusline" id="formStatus"></div>
+        </form>
+      </div>
+    </section>
+
+    <section class="page" id="page-contato">
+      <div class="card soft">
+        <div class="section-head">
+          <h2>Contato da clínica</h2>
+          <p>Fale diretamente com a recepção sempre que precisar.</p>
+        </div>
+        <div class="summary" style="margin-top:14px;">
+          <div class="summary-card">
+            <h4>WhatsApp da clínica</h4>
+            <p>73981168713</p>
+          </div>
+          <div class="summary-card">
+            <h4>Agendamento integrado</h4>
+            <p>Seu pedido entra no mesmo sistema da clínica e o WhatsApp já abre com a mensagem pronta.</p>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:16px;">
+          <a class="btn primary" href="https://wa.me/5573981168713" target="_blank" rel="noopener">Abrir WhatsApp da clínica</a>
+          <button class="btn soft" type="button" onclick="switchPage('agendar')">Ir para agendamento</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-card">
+      <div class="success-icon">✓</div>
+      <h2 style="margin:0 0 8px;">Agendamento enviado!</h2>
+      <p id="successText" style="color:#7a6859;margin:0 0 16px;">Seu pedido já caiu no sistema da clínica.</p>
+      <button class="btn primary" id="successNowBtn" type="button">Abrir WhatsApp agora</button>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="wrap">
+      <button class="nav-btn active" data-page="inicio" type="button">Início</button>
+      <button class="nav-btn" data-page="agendar" type="button">Agendar</button>
+      <button class="nav-btn" data-page="contato" type="button">Contato</button>
+    </div>
+  </nav>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbya5L-uGfXbEA75uFp9Oxz9o8YBzIkq02sODsPnzef_V7qAqmuXAPFwtP43GlQlEmRAPA/exec";
+    const CLINIC_WHATSAPP = "73981168713";
+    const FRIDAY_SLOTS = ["08:00","09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00"];
+    const SATURDAY_SLOTS = ["08:00","09:00","10:00","11:00","12:00"];
+    const state = { occupiedByDate: {}, availableByDate: {}, lastWhatsappUrl: "" };
+
+    const els = {
+      splash: document.getElementById('splash'),
+      pages: [...document.querySelectorAll('.page')],
+      navBtns: [...document.querySelectorAll('.nav-btn')],
+      form: document.getElementById('appointmentForm'),
+      formStatus: document.getElementById('formStatus'),
+      submitBtn: document.getElementById('submitBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      data: document.getElementById('data'),
+      hora: document.getElementById('hora'),
+      occupiedInfo: document.getElementById('occupiedInfo'),
+      occupiedSlots: document.getElementById('occupiedSlots'),
+      successOverlay: document.getElementById('successOverlay'),
+      successText: document.getElementById('successText'),
+      successNowBtn: document.getElementById('successNowBtn')
+    };
+
+    function showStatus(type, text) {
+      els.formStatus.className = 'statusline show ' + type;
+      els.formStatus.textContent = text;
+    }
+    function hideStatus() {
+      els.formStatus.className = 'statusline';
+      els.formStatus.textContent = '';
+    }
+    function digitsOnly(v) { return String(v || '').replace(/\D/g, ''); }
+    function formatDateBR(value) {
+      if (!value) return '';
+      const [y,m,d] = value.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    function parseTimeValue(value) {
+      if (!value) return '';
+      const s = String(value).trim();
+      const match = s.match(/^(\d{1,2}):(\d{2})/);
+      return match ? `${match[1].padStart(2,'0')}:${match[2]}` : s.slice(0,5);
+    }
+    function getDayOfWeek(dateStr) {
+      const [y,m,d] = dateStr.split('-').map(Number);
+      return new Date(y, m - 1, d).getDay();
+    }
+    function isFriday(dateStr) { return getDayOfWeek(dateStr) === 5; }
+    function isSaturday(dateStr) { return getDayOfWeek(dateStr) === 6; }
+    function isSunday(dateStr) { return getDayOfWeek(dateStr) === 0; }
+    function isMonToThu(dateStr) {
+      const d = getDayOfWeek(dateStr);
+      return d >= 1 && d <= 4;
+    }
+    function getAllowedSlots(dateStr) {
+      if (!dateStr) return [];
+      if (isFriday(dateStr)) return [...FRIDAY_SLOTS];
+      if (isSaturday(dateStr)) return [...SATURDAY_SLOTS];
+      return [];
+    }
+    function fillHourOptions(dateStr, available) {
+      els.hora.innerHTML = '';
+      if (!dateStr) {
+        els.hora.innerHTML = '<option value="">Selecione a data primeiro</option>';
+        return;
+      }
+      if (isMonToThu(dateStr)) {
+        els.hora.innerHTML = '<option value="">Retorno: falar com a clínica</option>';
+        return;
+      }
+      if (isSunday(dateStr)) {
+        els.hora.innerHTML = '<option value="">Domingo sem atendimento</option>';
+        return;
+      }
+      if (!available.length) {
+        els.hora.innerHTML = '<option value="">Sem horários disponíveis</option>';
+        return;
+      }
+      els.hora.innerHTML = '<option value="">Selecione um horário</option>' + available.map(h => `<option value="${h}">${h}</option>`).join('');
+    }
+    function renderInfo(dateValue, occupied, available) {
+      if (!dateValue) {
+        els.occupiedInfo.textContent = 'Selecione uma data para ver os horários disponíveis.';
+        els.occupiedSlots.innerHTML = '';
+        return;
+      }
+      if (isMonToThu(dateValue)) {
+        els.occupiedInfo.textContent = 'De segunda a quinta, os retornos são combinados direto com a clínica.';
+        els.occupiedSlots.innerHTML = '<a class="btn soft" href="https://wa.me/55' + CLINIC_WHATSAPP + '" target="_blank" rel="noopener">Falar com a clínica</a>';
+        return;
+      }
+      if (isSunday(dateValue)) {
+        els.occupiedInfo.textContent = 'Domingo não há atendimento.';
+        els.occupiedSlots.innerHTML = '';
+        return;
+      }
+      const chips = [];
+      available.forEach(h => chips.push(`<span class="slot free">${h} livre</span>`));
+      occupied.forEach(h => chips.push(`<span class="slot">${h} ocupado</span>`));
+      els.occupiedInfo.textContent = isFriday(dateValue)
+        ? 'Sexta-feira: 08:00 às 12:00 e 14:00 às 17:00.'
+        : 'Sábado: 08:00 às 12:00.';
+      els.occupiedSlots.innerHTML = chips.join('') || '<span class="slot">Sem horários disponíveis</span>';
+    }
+    function switchPage(page) {
+      els.pages.forEach(el => el.classList.toggle('active', el.id === 'page-' + page));
+      els.navBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.page === page));
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+    window.switchPage = switchPage;
+
+    async function fetchOccupiedSlots(dateValue) {
+      if (!dateValue) {
+        fillHourOptions('', []);
+        renderInfo('', [], []);
+        return [];
+      }
+      const allowed = getAllowedSlots(dateValue);
+      if (isMonToThu(dateValue) || isSunday(dateValue)) {
+        fillHourOptions(dateValue, []);
+        renderInfo(dateValue, [], []);
+        return [];
+      }
+      try {
+        const url = `${API_URL}${API_URL.includes('?') ? '&' : '?'}acao=horarios_ocupados&data=${encodeURIComponent(dateValue)}`;
+        const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+        const json = await res.json();
+        const occupied = Array.isArray(json.horarios) ? [...new Set(json.horarios.map(parseTimeValue).filter(Boolean))].sort() : [];
+        const available = allowed.filter(h => !occupied.includes(h));
+        state.occupiedByDate[dateValue] = occupied;
+        state.availableByDate[dateValue] = available;
+        fillHourOptions(dateValue, available);
+        renderInfo(dateValue, occupied, available);
+        return occupied;
+      } catch (e) {
+        const available = [...allowed];
+        state.occupiedByDate[dateValue] = [];
+        state.availableByDate[dateValue] = available;
+        fillHourOptions(dateValue, available);
+        renderInfo(dateValue, [], available);
+        return [];
+      }
+    }
+
+    function isTimeAllowed(dateValue, timeValue) {
+      const available = state.availableByDate[dateValue] || [];
+      return available.includes(parseTimeValue(timeValue));
+    }
+    function buildWhatsappUrl(data) {
+      const msg = 'Olá! Novo agendamento realizado.\n\n' +
+        'Paciente: ' + data.paciente + '\n' +
+        'Data: ' + formatDateBR(data.data) + '\n' +
+        'Horário: ' + data.hora + '\n' +
+        'Telefone: ' + data.telefone;
+      return 'https://wa.me/55' + CLINIC_WHATSAPP + '?text=' + encodeURIComponent(msg);
+    }
+    function openWhatsappNow() {
+      if (state.lastWhatsappUrl) {
+        window.location.href = state.lastWhatsappUrl;
+      }
+    }
+
+    async function submitAppointment(formData) {
+      const payload = Object.fromEntries(formData.entries());
+      payload.acao = 'criar_agendamento';
+      payload.status = 'Confirmado';
+      payload.confirmado = 'Sim';
+      payload.profissional = 'Dra. Luisa Chácara';
+      payload.telefone = digitsOnly(payload.telefone);
+      payload.hora = parseTimeValue(payload.hora);
+
+      if (!payload.paciente || !payload.telefone || !payload.data || !payload.hora) {
+        showStatus('error', 'Preencha nome, telefone, data e hora para continuar.');
+        return;
+      }
+      if (isMonToThu(payload.data)) {
+        showStatus('error', 'De segunda a quinta, os retornos são combinados direto com a clínica.');
+        window.location.href = 'https://wa.me/55' + CLINIC_WHATSAPP;
+        return;
+      }
+      if (isSunday(payload.data)) {
+        showStatus('error', 'Domingo não há atendimento.');
+        return;
+      }
+      if (!isTimeAllowed(payload.data, payload.hora)) {
+        showStatus('error', 'Esse horário não está disponível para a data escolhida.');
+        return;
+      }
+
+      els.submitBtn.disabled = true;
+      els.submitBtn.textContent = 'Enviando...';
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+
+        let result = {};
+        const raw = await res.text();
+        try {
+          result = JSON.parse(raw);
+        } catch (_) {
+          result = { status: res.ok ? 'ok' : 'erro', mensagem: raw };
+        }
+
+        if (!(res.ok && result.status === 'ok')) {
+          throw new Error(result.mensagem || 'Não foi possível salvar o agendamento.');
+        }
+
+        hideStatus();
+        state.lastWhatsappUrl = buildWhatsappUrl(payload);
+        els.successText.textContent = `Agendamento feito para ${formatDateBR(payload.data)} às ${payload.hora}. Agora você será levado ao WhatsApp da clínica.`;
+        els.successOverlay.classList.add('show');
+
+        els.form.reset();
+        setDefaultDate();
+        fillHourOptions('', []);
+        renderInfo('', [], []);
+
+        setTimeout(() => {
+          window.location.href = state.lastWhatsappUrl;
+        }, 900);
+      } catch (e) {
+        showStatus('error', e.message || 'Falha ao enviar o agendamento.');
+      } finally {
+        els.submitBtn.disabled = false;
+        els.submitBtn.textContent = 'Confirmar agendamento';
+      }
+    }
+
+    els.form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideStatus();
+      await submitAppointment(new FormData(els.form));
+    });
+    els.clearBtn.addEventListener('click', () => {
+      els.form.reset();
+      hideStatus();
+      setDefaultDate();
+      fillHourOptions('', []);
+      renderInfo('', [], []);
+    });
+    els.data.addEventListener('change', () => {
+      hideStatus();
+      fetchOccupiedSlots(els.data.value);
+    });
+    els.navBtns.forEach(btn => btn.addEventListener('click', () => switchPage(btn.dataset.page)));
+    els.successNowBtn.addEventListener('click', openWhatsappNow);
+
+    function setDefaultDate() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      els.data.min = `${yyyy}-${mm}-${dd}`;
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js');
+      });
+    }
+    window.addEventListener('load', () => {
+      setDefaultDate();
+      fillHourOptions('', []);
+      setTimeout(() => els.splash.classList.add('hide'), 1000);
+    });
+  </script>
+</body>
+</html>
