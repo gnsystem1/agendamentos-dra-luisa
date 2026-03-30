@@ -58,6 +58,7 @@
     .slots{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
     .slot{padding:10px 12px;border-radius:999px;background:#fff2df;border:1px solid #ecd2aa;color:#845d2e;font-size:13px}
     .slot.free{background:#edf8f2;border-color:#d3eadb;color:#2f7d5c}
+    .slot.unavailable{background:#fdeeee;border-color:#f0d1d1;color:#b65252}
     .summary{display:grid;gap:12px}
     .summary-card{padding:16px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,#fff,#fbf6ef)}
     .summary-card h4{margin:0 0 6px;font-size:18px}
@@ -257,7 +258,7 @@
     const CLINIC_WHATSAPP = "73981168713";
     const FRIDAY_SLOTS = ["08:00","09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00"];
     const SATURDAY_SLOTS = ["08:00","09:00","10:00","11:00","12:00"];
-    const state = { occupiedByDate: {}, availableByDate: {}, lastWhatsappUrl: "" };
+    const state = { unavailableByDate: {}, availableByDate: {}, dayFullBlockedByDate: {}, lastWhatsappUrl: "" };
 
     const els = {
       splash: document.getElementById('splash'),
@@ -333,7 +334,7 @@
       }
       els.hora.innerHTML = '<option value="">Selecione um horário</option>' + available.map(h => `<option value="${h}">${h}</option>`).join('');
     }
-    function renderInfo(dateValue, occupied, available) {
+    function renderInfo(dateValue, unavailable, available, dayFullBlocked) {
       if (!dateValue) {
         els.occupiedInfo.textContent = 'Selecione uma data para ver os horários disponíveis.';
         els.occupiedSlots.innerHTML = '';
@@ -349,13 +350,18 @@
         els.occupiedSlots.innerHTML = '';
         return;
       }
+      if (dayFullBlocked) {
+        els.occupiedInfo.textContent = 'Esta data está bloqueada pela clínica e não possui horários disponíveis.';
+        els.occupiedSlots.innerHTML = '<span class="slot unavailable">Dia bloqueado</span>';
+        return;
+      }
       const chips = [];
       available.forEach(h => chips.push(`<span class="slot free">${h} livre</span>`));
-      occupied.forEach(h => chips.push(`<span class="slot">${h} ocupado</span>`));
+      unavailable.forEach(h => chips.push(`<span class="slot unavailable">${h} indisponível</span>`));
       els.occupiedInfo.textContent = isFriday(dateValue)
         ? 'Sexta-feira: 08:00 às 12:00 e 14:00 às 17:00.'
         : 'Sábado: 08:00 às 12:00.';
-      els.occupiedSlots.innerHTML = chips.join('') || '<span class="slot">Sem horários disponíveis</span>';
+      els.occupiedSlots.innerHTML = chips.join('') || '<span class="slot unavailable">Sem horários disponíveis</span>';
     }
     function switchPage(page) {
       els.pages.forEach(el => el.classList.toggle('active', el.id === 'page-' + page));
@@ -367,37 +373,41 @@
     async function fetchOccupiedSlots(dateValue) {
       if (!dateValue) {
         fillHourOptions('', []);
-        renderInfo('', [], []);
+        renderInfo('', [], [], false);
         return [];
       }
       const allowed = getAllowedSlots(dateValue);
       if (isMonToThu(dateValue) || isSunday(dateValue)) {
         fillHourOptions(dateValue, []);
-        renderInfo(dateValue, [], []);
+        renderInfo(dateValue, [], [], false);
         return [];
       }
       try {
-        const url = `${API_URL}${API_URL.includes('?') ? '&' : '?'}acao=horarios_ocupados&data=${encodeURIComponent(dateValue)}`;
+        const url = `${API_URL}${API_URL.includes('?') ? '&' : '?'}acao=horarios_ocupados&data=${encodeURIComponent(dateValue)}&_ts=${Date.now()}`;
         const res = await fetch(url, { method: 'GET', cache: 'no-store' });
         const json = await res.json();
-        const occupied = Array.isArray(json.horarios) ? [...new Set(json.horarios.map(parseTimeValue).filter(Boolean))].sort() : [];
-        const available = allowed.filter(h => !occupied.includes(h));
-        state.occupiedByDate[dateValue] = occupied;
+        const unavailable = Array.isArray(json.horarios) ? [...new Set(json.horarios.map(parseTimeValue).filter(Boolean))].sort() : [];
+        const dayFullBlocked = Boolean(json.diaTodo);
+        const available = dayFullBlocked ? [] : allowed.filter(h => !unavailable.includes(h));
+        state.unavailableByDate[dateValue] = unavailable;
         state.availableByDate[dateValue] = available;
+        state.dayFullBlockedByDate[dateValue] = dayFullBlocked;
         fillHourOptions(dateValue, available);
-        renderInfo(dateValue, occupied, available);
-        return occupied;
+        renderInfo(dateValue, unavailable, available, dayFullBlocked);
+        return unavailable;
       } catch (e) {
         const available = [...allowed];
-        state.occupiedByDate[dateValue] = [];
+        state.unavailableByDate[dateValue] = [];
         state.availableByDate[dateValue] = available;
+        state.dayFullBlockedByDate[dateValue] = false;
         fillHourOptions(dateValue, available);
-        renderInfo(dateValue, [], available);
+        renderInfo(dateValue, [], available, false);
         return [];
       }
     }
 
     function isTimeAllowed(dateValue, timeValue) {
+      if (state.dayFullBlockedByDate[dateValue]) return false;
       const available = state.availableByDate[dateValue] || [];
       return available.includes(parseTimeValue(timeValue));
     }
@@ -437,8 +447,12 @@
         showStatus('error', 'Domingo não há atendimento.');
         return;
       }
+      if (state.dayFullBlockedByDate[payload.data]) {
+        showStatus('error', 'Esta data está bloqueada pela clínica.');
+        return;
+      }
       if (!isTimeAllowed(payload.data, payload.hora)) {
-        showStatus('error', 'Esse horário não está disponível para a data escolhida.');
+        showStatus('error', 'Esse horário está indisponível para a data escolhida.');
         return;
       }
 
@@ -472,7 +486,7 @@
         els.form.reset();
         setDefaultDate();
         fillHourOptions('', []);
-        renderInfo('', [], []);
+        renderInfo('', [], [], false);
 
         setTimeout(() => {
           window.location.href = state.lastWhatsappUrl;
@@ -495,7 +509,7 @@
       hideStatus();
       setDefaultDate();
       fillHourOptions('', []);
-      renderInfo('', [], []);
+      renderInfo('', [], [], false);
     });
     els.data.addEventListener('change', () => {
       hideStatus();
